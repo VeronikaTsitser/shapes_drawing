@@ -11,7 +11,7 @@ class ShapesDrawingApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Shapes Drawing',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
@@ -35,83 +35,14 @@ class _MyHomePageState extends State<MyHomePage> {
   Offset? selectedPoint;
   int? selectedPointIndex;
 
-  void _updateSelectedPoint(Offset point) {
-    const double touchRadius = 20.0;
-    for (int i = 0; i < startPoints.length; i++) {
-      if ((startPoints[i]! - point).distance < touchRadius) {
-        selectedPointIndex = i;
-        return; // Выходим из цикла после нахождения ближайшей точки
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.yellow,
       body: GestureDetector(
-        onPanStart: (details) {
-          RenderBox renderBox = context.findRenderObject() as RenderBox;
-          Offset localPosition = renderBox.globalToLocal(details.globalPosition);
-
-          if (!shouldFill) {
-            // Рисуем новые линии, если фигура не замкнута
-            if (endPoints.isNotEmpty) {
-              // Начинаем новую линию с конца предыдущей
-              startPoints.add(endPoints.last);
-            } else {
-              // Если это первая точка фигуры
-              startPoints.add(localPosition);
-            }
-            endPoints.add(localPosition);
-          } else {
-            // Проверяем, выбрана ли точка
-            _updateSelectedPoint(localPosition);
-          }
-        },
-        onPanUpdate: (details) {
-          if (shouldFill && selectedPointIndex != null) {
-            RenderBox renderBox = context.findRenderObject() as RenderBox;
-            Offset localPosition = renderBox.globalToLocal(details.globalPosition);
-
-            setState(() {
-              // Для первой точки
-              if (selectedPointIndex == 0) {
-                startPoints[0] = localPosition;
-                endPoints[endPoints.length - 1] = localPosition;
-              }
-              // Для предпоследней точки
-              else if (selectedPointIndex == startPoints.length - 1) {
-                startPoints[selectedPointIndex!] = localPosition;
-                endPoints[selectedPointIndex! - 1] = localPosition;
-              }
-              // Для промежуточных точек
-              else {
-                startPoints[selectedPointIndex!] = localPosition;
-                endPoints[selectedPointIndex! - 1] = localPosition;
-              }
-            });
-          } else if (!shouldFill && endPoints.isNotEmpty) {
-            // Обновляем последнюю точку для рисования новой линии
-            RenderBox renderBox = context.findRenderObject() as RenderBox;
-            Offset localPosition = renderBox.globalToLocal(details.globalPosition);
-            setState(() {
-              endPoints[endPoints.length - 1] = localPosition;
-            });
-          }
-        },
-        onPanEnd: (details) {
-          setState(() {
-            if (!shouldFill && startPoints.isNotEmpty && endPoints.isNotEmpty) {
-              if ((startPoints.first! - endPoints.last!).distance < 20.0) {
-                // Замыкаем фигуру и обновляем флаг
-                endPoints[endPoints.length - 1] = startPoints.first;
-                shouldFill = true;
-              }
-            }
-            selectedPointIndex = null;
-          });
-        },
+        onPanStart: _onPanStart,
+        onPanUpdate: _onPanUpdate,
+        onPanEnd: _onPanEnd,
         child: CustomPaint(
           painter: ShapesPainter(
             startPoints: startPoints,
@@ -122,6 +53,108 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       ),
     );
+  }
+
+  void _updateSelectedPoint(Offset point) {
+    const double touchRadius = 20.0;
+    for (int i = 0; i < startPoints.length; i++) {
+      if ((startPoints[i]! - point).distance < touchRadius) {
+        selectedPointIndex = i;
+        return; // Выходим из цикла после нахождения ближайшей точки
+      }
+    }
+  }
+
+  bool doLinesIntersect(Offset p1, Offset p2, Offset p3, Offset p4) {
+    double ccw(Offset A, Offset B, Offset C) {
+      return (C.dy - A.dy) * (B.dx - A.dx) - (B.dy - A.dy) * (C.dx - A.dx);
+    }
+
+    double d1 = ccw(p4, p3, p1);
+    double d2 = ccw(p4, p3, p2);
+    double d3 = ccw(p2, p1, p3);
+    double d4 = ccw(p2, p1, p4);
+
+    // Проверяем, есть ли пересечение
+    if (d1 * d2 < 0 && d3 * d4 < 0) return true;
+
+    return false;
+  }
+
+  void _onPanStart(DragStartDetails details) {
+    RenderBox renderBox = context.findRenderObject() as RenderBox;
+    Offset localPosition = renderBox.globalToLocal(details.globalPosition);
+
+    if (!shouldFill) {
+      // Рисуем новые линии, если фигура не замкнута
+      if (endPoints.isNotEmpty) {
+        // Начинаем новую линию с конца предыдущей
+        startPoints.add(endPoints.last);
+      } else {
+        // Если это первая точка фигуры
+        startPoints.add(localPosition);
+      }
+      endPoints.add(localPosition);
+    } else {
+      // Проверяем, выбрана ли точка
+      _updateSelectedPoint(localPosition);
+    }
+  }
+
+  void _onPanUpdate(details) {
+    if (shouldFill && selectedPointIndex != null) {
+      RenderBox renderBox = context.findRenderObject() as RenderBox;
+      Offset localPosition = renderBox.globalToLocal(details.globalPosition);
+
+      setState(() {
+        // Для первой точки
+        if (selectedPointIndex == 0) {
+          startPoints[0] = localPosition;
+          endPoints[endPoints.length - 1] = localPosition;
+        }
+        // Для предпоследней точки
+        else if (selectedPointIndex == startPoints.length - 1) {
+          startPoints[selectedPointIndex!] = localPosition;
+          endPoints[selectedPointIndex! - 1] = localPosition;
+        }
+        // Для промежуточных точек
+        else {
+          startPoints[selectedPointIndex!] = localPosition;
+          endPoints[selectedPointIndex! - 1] = localPosition;
+        }
+      });
+    } else if (!shouldFill && endPoints.isNotEmpty) {
+      // Обновляем последнюю точку для рисования новой линии
+      RenderBox renderBox = context.findRenderObject() as RenderBox;
+      Offset localPosition = renderBox.globalToLocal(details.globalPosition);
+      setState(() {
+        endPoints[endPoints.length - 1] = localPosition;
+      });
+    }
+  }
+
+  void _onPanEnd(details) {
+    bool intersectionFound = false;
+    for (int i = 0; i < startPoints.length - 1; i++) {
+      if (doLinesIntersect(startPoints[i]!, endPoints[i]!, startPoints.last!, endPoints.last!)) {
+        intersectionFound = true;
+        break;
+      }
+    }
+    setState(() {
+      if (!shouldFill && startPoints.isNotEmpty && endPoints.isNotEmpty) {
+        if (intersectionFound) {
+          // Удаляем последнюю линию при обнаружении пересечения
+          startPoints.removeLast();
+          endPoints.removeLast();
+        } else if ((startPoints.first! - endPoints.last!).distance < 20.0) {
+          // Замыкаем фигуру и обновляем флаг
+          endPoints[endPoints.length - 1] = startPoints.first;
+          shouldFill = true;
+        }
+      }
+      selectedPointIndex = null;
+    });
   }
 }
 
