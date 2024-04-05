@@ -32,6 +32,7 @@ class _MyHomePageState extends State<MyHomePage> {
   GlobalKey customPaintKey = GlobalKey();
   List<Offset?> startPoints = [];
   List<Offset?> endPoints = [];
+  bool shouldFill = false;
 
   @override
   Widget build(BuildContext context) {
@@ -39,28 +40,43 @@ class _MyHomePageState extends State<MyHomePage> {
       backgroundColor: Colors.yellow,
       body: GestureDetector(
         onPanStart: (details) {
-          RenderBox renderBox = context.findRenderObject() as RenderBox;
-          Offset localPosition = renderBox.globalToLocal(details.globalPosition);
-          setState(() {
-            startPoints.add(localPosition);
-            endPoints.add(localPosition); // Добавляем ту же точку в качестве начала
-          });
+          if (!shouldFill) {
+            RenderBox renderBox = context.findRenderObject() as RenderBox;
+            Offset localPosition = renderBox.globalToLocal(details.globalPosition);
+            setState(() {
+              if (endPoints.isNotEmpty && endPoints.last != null) {
+                startPoints.add(endPoints.last);
+              } else {
+                startPoints.add(localPosition);
+              }
+              endPoints.add(localPosition);
+            });
+          }
         },
         onPanUpdate: (details) {
-          RenderBox renderBox = context.findRenderObject() as RenderBox;
-          Offset localPosition = renderBox.globalToLocal(details.globalPosition);
-          setState(() {
-            endPoints[endPoints.length - 1] = localPosition; // Обновляем последнюю точку
-          });
+          if (!shouldFill) {
+            RenderBox renderBox = context.findRenderObject() as RenderBox;
+            Offset localPosition = renderBox.globalToLocal(details.globalPosition);
+            setState(() {
+              endPoints[endPoints.length - 1] = localPosition; // Обновляем последнюю точку
+            });
+          }
         },
         onPanEnd: (details) {
           setState(() {
-            // Не добавляем ничего, оставляем точки как есть
+            if ((startPoints.first! - endPoints.last!).distance < 20.0) {
+              endPoints[endPoints.length - 1] = startPoints.first;
+              shouldFill = true;
+            }
           });
         },
         child: CustomPaint(
           key: customPaintKey,
-          painter: ShapesPainter(startPoints, endPoints),
+          painter: ShapesPainter(
+            startPoints: startPoints,
+            endPoints: endPoints,
+            shouldFill: shouldFill,
+          ),
           child: Container(),
         ),
       ),
@@ -69,9 +85,14 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 class ShapesPainter extends CustomPainter {
-  ShapesPainter(this.startPoints, this.endPoints);
+  ShapesPainter({
+    required this.startPoints,
+    required this.endPoints,
+    required this.shouldFill,
+  });
   final List<Offset?> startPoints;
   final List<Offset?> endPoints;
+  final bool shouldFill;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -89,6 +110,23 @@ class ShapesPainter extends CustomPainter {
       ..color = Colors.white
       ..strokeCap = StrokeCap.round
       ..strokeWidth = 15.0;
+
+    if (startPoints.isNotEmpty && endPoints.isNotEmpty) {
+      if (shouldFill && startPoints.length > 1) {
+        Paint fillPaint = Paint()
+          ..color = Colors.white
+          ..style = PaintingStyle.fill;
+
+        Path path = Path();
+        path.moveTo(startPoints.first!.dx, startPoints.first!.dy);
+        for (int i = 1; i < startPoints.length; i++) {
+          path.lineTo(startPoints[i]!.dx, startPoints[i]!.dy);
+        }
+        path.close();
+
+        canvas.drawPath(path, fillPaint);
+      }
+    }
 
     for (int i = 0; i < startPoints.length; i++) {
       if (startPoints[i] != null && endPoints[i] != null) {
