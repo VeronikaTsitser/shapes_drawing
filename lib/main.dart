@@ -39,21 +39,38 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.yellow,
-      body: GestureDetector(
-        onPanStart: _onPanStart,
-        onPanUpdate: _onPanUpdate,
-        onPanEnd: _onPanEnd,
-        child: CustomPaint(
-          painter: ShapesPainter(
-            startPoints: startPoints,
-            endPoints: endPoints,
-            shouldFill: shouldFill,
-          ),
-          child: Container(),
+    return Stack(
+      children: [
+        Image.asset(
+          'assets/images/background.png',
+          fit: BoxFit.cover,
+          height: double.infinity,
+          width: double.infinity,
         ),
-      ),
+        Scaffold(
+          extendBodyBehindAppBar: true,
+          appBar: AppBar(
+            toolbarHeight: 20,
+            backgroundColor: const Color.fromRGBO(246, 246, 246, 1),
+            shadowColor: Colors.black.withOpacity(0.3),
+            elevation: 1,
+          ),
+          backgroundColor: Colors.transparent,
+          body: GestureDetector(
+            onPanStart: _onPanStart,
+            onPanUpdate: _onPanUpdate,
+            onPanEnd: _onPanEnd,
+            child: CustomPaint(
+              painter: ShapesPainter(
+                startPoints: startPoints,
+                endPoints: endPoints,
+                shouldFill: shouldFill,
+              ),
+              child: Container(),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
