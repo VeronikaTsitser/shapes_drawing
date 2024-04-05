@@ -29,10 +29,21 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  GlobalKey customPaintKey = GlobalKey();
   List<Offset?> startPoints = [];
   List<Offset?> endPoints = [];
   bool shouldFill = false;
+  Offset? selectedPoint;
+  int? selectedPointIndex;
+
+  void _updateSelectedPoint(Offset point) {
+    const double touchRadius = 20.0;
+    for (int i = 0; i < startPoints.length; i++) {
+      if ((startPoints[i]! - point).distance < touchRadius) {
+        selectedPointIndex = i;
+        return; // Выходим из цикла после нахождения ближайшей точки
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,38 +51,68 @@ class _MyHomePageState extends State<MyHomePage> {
       backgroundColor: Colors.yellow,
       body: GestureDetector(
         onPanStart: (details) {
+          RenderBox renderBox = context.findRenderObject() as RenderBox;
+          Offset localPosition = renderBox.globalToLocal(details.globalPosition);
+
           if (!shouldFill) {
-            RenderBox renderBox = context.findRenderObject() as RenderBox;
-            Offset localPosition = renderBox.globalToLocal(details.globalPosition);
-            setState(() {
-              if (endPoints.isNotEmpty && endPoints.last != null) {
-                startPoints.add(endPoints.last);
-              } else {
-                startPoints.add(localPosition);
-              }
-              endPoints.add(localPosition);
-            });
+            // Рисуем новые линии, если фигура не замкнута
+            if (endPoints.isNotEmpty) {
+              // Начинаем новую линию с конца предыдущей
+              startPoints.add(endPoints.last);
+            } else {
+              // Если это первая точка фигуры
+              startPoints.add(localPosition);
+            }
+            endPoints.add(localPosition);
+          } else {
+            // Проверяем, выбрана ли точка
+            _updateSelectedPoint(localPosition);
           }
         },
         onPanUpdate: (details) {
-          if (!shouldFill) {
+          if (shouldFill && selectedPointIndex != null) {
+            RenderBox renderBox = context.findRenderObject() as RenderBox;
+            Offset localPosition = renderBox.globalToLocal(details.globalPosition);
+
+            setState(() {
+              // Для первой точки
+              if (selectedPointIndex == 0) {
+                startPoints[0] = localPosition;
+                endPoints[endPoints.length - 1] = localPosition;
+              }
+              // Для предпоследней точки
+              else if (selectedPointIndex == startPoints.length - 1) {
+                startPoints[selectedPointIndex!] = localPosition;
+                endPoints[selectedPointIndex! - 1] = localPosition;
+              }
+              // Для промежуточных точек
+              else {
+                startPoints[selectedPointIndex!] = localPosition;
+                endPoints[selectedPointIndex! - 1] = localPosition;
+              }
+            });
+          } else if (!shouldFill && endPoints.isNotEmpty) {
+            // Обновляем последнюю точку для рисования новой линии
             RenderBox renderBox = context.findRenderObject() as RenderBox;
             Offset localPosition = renderBox.globalToLocal(details.globalPosition);
             setState(() {
-              endPoints[endPoints.length - 1] = localPosition; // Обновляем последнюю точку
+              endPoints[endPoints.length - 1] = localPosition;
             });
           }
         },
         onPanEnd: (details) {
           setState(() {
-            if ((startPoints.first! - endPoints.last!).distance < 20.0) {
-              endPoints[endPoints.length - 1] = startPoints.first;
-              shouldFill = true;
+            if (!shouldFill && startPoints.isNotEmpty && endPoints.isNotEmpty) {
+              if ((startPoints.first! - endPoints.last!).distance < 20.0) {
+                // Замыкаем фигуру и обновляем флаг
+                endPoints[endPoints.length - 1] = startPoints.first;
+                shouldFill = true;
+              }
             }
+            selectedPointIndex = null;
           });
         },
         child: CustomPaint(
-          key: customPaintKey,
           painter: ShapesPainter(
             startPoints: startPoints,
             endPoints: endPoints,
