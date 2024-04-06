@@ -2,6 +2,7 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 void main() {
   runApp(const ShapesDrawingApp());
@@ -36,6 +37,21 @@ class _MyHomePageState extends State<MyHomePage> {
   bool shouldFill = false;
   Offset? selectedPoint;
   int? selectedPointIndex;
+  ui.Image? customIcon;
+
+  @override
+  void initState() {
+    _loadImage();
+    super.initState();
+  }
+
+  Future<void> _loadImage() async {
+    final ByteData data = await rootBundle.load('assets/icons/cursor.png');
+    final Uint8List bytes = data.buffer.asUint8List();
+    final ui.Codec codec = await ui.instantiateImageCodec(bytes);
+    final ui.FrameInfo fi = await codec.getNextFrame();
+    customIcon = fi.image;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,6 +81,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 startPoints: startPoints,
                 endPoints: endPoints,
                 shouldFill: shouldFill,
+                customIcon: customIcon,
               ),
               child: Container(),
             ),
@@ -182,10 +199,12 @@ class ShapesPainter extends CustomPainter {
     required this.startPoints,
     required this.endPoints,
     required this.shouldFill,
+    required this.customIcon,
   });
   final List<Offset?> startPoints;
   final List<Offset?> endPoints;
   final bool shouldFill;
+  final ui.Image? customIcon;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -223,17 +242,23 @@ class ShapesPainter extends CustomPainter {
     Paint linePaint = Paint()
       ..color = Colors.black
       ..strokeCap = StrokeCap.round
-      ..strokeWidth = 5.0;
+      ..strokeWidth = 7.0;
 
     Paint pointPaint = Paint()
       ..color = Colors.blue
-      ..strokeCap = StrokeCap.round
-      ..strokeWidth = 10.0;
+      ..strokeCap = StrokeCap.round;
 
-    Paint bigPointPaint = Paint()
+    Paint pointBorder = Paint()
       ..color = Colors.white
-      ..strokeCap = StrokeCap.round
-      ..strokeWidth = 15.0;
+      ..strokeCap = StrokeCap.round;
+
+    final filledPointPaint = Paint()
+      ..color = Colors.white
+      ..strokeCap = StrokeCap.round;
+
+    final filledPointBorder = Paint()
+      ..color = const Color.fromRGBO(125, 125, 125, 1)
+      ..strokeCap = StrokeCap.round;
 
     if (startPoints.isNotEmpty && endPoints.isNotEmpty) {
       if (shouldFill && startPoints.length > 1) {
@@ -251,6 +276,11 @@ class ShapesPainter extends CustomPainter {
         canvas.drawPath(path, fillPaint);
       }
     }
+    if (!shouldFill && customIcon != null && endPoints.isNotEmpty) {
+      // Рисуем кастомную иконку в последней точке
+      final Offset lastPoint = endPoints.last!;
+      canvas.drawImage(customIcon!, lastPoint - Offset(customIcon!.width / 2, customIcon!.height / 2), Paint());
+    }
 
     for (int i = 0; i < startPoints.length; i++) {
       if (startPoints[i] != null && endPoints[i] != null) {
@@ -258,10 +288,17 @@ class ShapesPainter extends CustomPainter {
         canvas.drawLine(startPoints[i]!, endPoints[i]!, linePaint);
 
         // Рисуем начальную и конечную точку
-        canvas.drawCircle(startPoints[i]!, 7.0, bigPointPaint);
-        canvas.drawCircle(startPoints[i]!, 5.0, pointPaint);
-        canvas.drawCircle(endPoints[i]!, 7.0, bigPointPaint);
-        canvas.drawCircle(endPoints[i]!, 5.0, pointPaint);
+        if (!shouldFill) {
+          canvas.drawCircle(startPoints[i]!, 8.0, pointBorder);
+          canvas.drawCircle(startPoints[i]!, 6.0, pointPaint);
+          canvas.drawCircle(endPoints[i]!, 8.0, pointBorder);
+          canvas.drawCircle(endPoints[i]!, 6.0, pointPaint);
+        } else {
+          canvas.drawCircle(startPoints[i]!, 8.0, filledPointBorder);
+          canvas.drawCircle(startPoints[i]!, 6.0, filledPointPaint);
+          canvas.drawCircle(endPoints[i]!, 8.0, filledPointBorder);
+          canvas.drawCircle(endPoints[i]!, 6.0, filledPointPaint);
+        }
       }
     }
   }
