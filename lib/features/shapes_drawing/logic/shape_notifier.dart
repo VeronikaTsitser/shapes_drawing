@@ -44,19 +44,21 @@ class ShapeNotifier extends StateNotifier<ShapeState> {
     final startPoints = [...state.startPoints];
     final endPoints = [...state.endPoints];
 
-    if (state.isFilled && state.selectedPointIndex != null) {
-      if (state.selectedPointIndex == 0) {
-        startPoints[0] = localPosition;
+    if (localPosition.dy >= 0) {
+      if (state.isFilled && state.selectedPointIndex != null) {
+        if (state.selectedPointIndex == 0) {
+          startPoints[0] = localPosition;
+          endPoints[endPoints.length - 1] = localPosition;
+          state = state.copyWith(startPoints: startPoints, endPoints: endPoints);
+        } else {
+          startPoints[state.selectedPointIndex!] = localPosition;
+          endPoints[state.selectedPointIndex! - 1] = localPosition;
+          state = state.copyWith(startPoints: startPoints, endPoints: endPoints);
+        }
+      } else if (!state.isFilled) {
         endPoints[endPoints.length - 1] = localPosition;
-        state = state.copyWith(startPoints: startPoints, endPoints: endPoints);
-      } else {
-        startPoints[state.selectedPointIndex!] = localPosition;
-        endPoints[state.selectedPointIndex! - 1] = localPosition;
-        state = state.copyWith(startPoints: startPoints, endPoints: endPoints);
+        state = state.copyWith(endPoints: endPoints);
       }
-    } else if (!state.isFilled) {
-      endPoints[endPoints.length - 1] = localPosition;
-      state = state.copyWith(endPoints: endPoints);
     }
   }
 
