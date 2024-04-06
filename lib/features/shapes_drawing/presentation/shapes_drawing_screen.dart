@@ -1,7 +1,4 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:shapes_drawing/features/shapes_drawing/presentation/shapes_painter.dart';
 
 class ShapesDrawingScreen extends StatefulWidget {
@@ -12,18 +9,11 @@ class ShapesDrawingScreen extends StatefulWidget {
 }
 
 class _ShapesDrawingScreenState extends State<ShapesDrawingScreen> {
-  List<Offset?> startPoints = [];
-  List<Offset?> endPoints = [];
+  List<Offset> startPoints = [];
+  List<Offset> endPoints = [];
   bool isFilled = false;
   Offset? selectedPoint;
   int? selectedPointIndex;
-  ui.Image? customIcon;
-
-  @override
-  void initState() {
-    _loadImage();
-    super.initState();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,14 +38,10 @@ class _ShapesDrawingScreenState extends State<ShapesDrawingScreen> {
             onPanStart: _onPanStart,
             onPanUpdate: _onPanUpdate,
             onPanEnd: _onPanEnd,
-            child: CustomPaint(
-              painter: ShapesPainter(
-                startPoints: startPoints,
-                endPoints: endPoints,
-                shouldFill: isFilled,
-                customIcon: customIcon,
-              ),
-              child: Container(),
+            child: ShapesPainterWidget(
+              startPoints: startPoints,
+              endPoints: endPoints,
+              isFilled: isFilled,
             ),
           ),
         ),
@@ -63,18 +49,10 @@ class _ShapesDrawingScreenState extends State<ShapesDrawingScreen> {
     );
   }
 
-  Future<void> _loadImage() async {
-    final ByteData data = await rootBundle.load('assets/icons/cursor.png');
-    final Uint8List bytes = data.buffer.asUint8List();
-    final ui.Codec codec = await ui.instantiateImageCodec(bytes);
-    final ui.FrameInfo fi = await codec.getNextFrame();
-    customIcon = fi.image;
-  }
-
   void _updateSelectedPoint(Offset point) {
     const double touchRadius = 20.0;
     for (int i = 0; i < startPoints.length; i++) {
-      if ((startPoints[i]! - point).distance < touchRadius) {
+      if ((startPoints[i] - point).distance < touchRadius) {
         selectedPointIndex = i;
         return; // Выходим из цикла после нахождения ближайшей точки
       }
@@ -139,7 +117,7 @@ class _ShapesDrawingScreenState extends State<ShapesDrawingScreen> {
   void _onPanEnd(details) {
     bool intersectionFound = false;
     for (int i = 0; i < startPoints.length - 1; i++) {
-      if (doLinesIntersect(startPoints[i]!, endPoints[i]!, startPoints.last!, endPoints.last!)) {
+      if (doLinesIntersect(startPoints[i], endPoints[i], startPoints.last, endPoints.last)) {
         intersectionFound = true;
         break;
       }
@@ -150,7 +128,7 @@ class _ShapesDrawingScreenState extends State<ShapesDrawingScreen> {
           // Удаляем последнюю линию при обнаружении пересечения
           startPoints.removeLast();
           endPoints.removeLast();
-        } else if (((startPoints.first! - endPoints.last!).distance < 20.0) && endPoints.length > 2) {
+        } else if (((startPoints.first - endPoints.last).distance < 20.0) && endPoints.length > 2) {
           // Замыкаем фигуру и обновляем флаг
           endPoints[endPoints.length - 1] = startPoints.first;
           isFilled = true;
