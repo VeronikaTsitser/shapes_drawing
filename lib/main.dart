@@ -34,7 +34,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   List<Offset?> startPoints = [];
   List<Offset?> endPoints = [];
-  bool shouldFill = false;
+  bool isFilled = false;
   Offset? selectedPoint;
   int? selectedPointIndex;
   ui.Image? customIcon;
@@ -43,14 +43,6 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     _loadImage();
     super.initState();
-  }
-
-  Future<void> _loadImage() async {
-    final ByteData data = await rootBundle.load('assets/icons/cursor.png');
-    final Uint8List bytes = data.buffer.asUint8List();
-    final ui.Codec codec = await ui.instantiateImageCodec(bytes);
-    final ui.FrameInfo fi = await codec.getNextFrame();
-    customIcon = fi.image;
   }
 
   @override
@@ -80,7 +72,7 @@ class _MyHomePageState extends State<MyHomePage> {
               painter: ShapesPainter(
                 startPoints: startPoints,
                 endPoints: endPoints,
-                shouldFill: shouldFill,
+                shouldFill: isFilled,
                 customIcon: customIcon,
               ),
               child: Container(),
@@ -89,6 +81,14 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       ],
     );
+  }
+
+  Future<void> _loadImage() async {
+    final ByteData data = await rootBundle.load('assets/icons/cursor.png');
+    final Uint8List bytes = data.buffer.asUint8List();
+    final ui.Codec codec = await ui.instantiateImageCodec(bytes);
+    final ui.FrameInfo fi = await codec.getNextFrame();
+    customIcon = fi.image;
   }
 
   void _updateSelectedPoint(Offset point) {
@@ -121,7 +121,7 @@ class _MyHomePageState extends State<MyHomePage> {
     RenderBox renderBox = context.findRenderObject() as RenderBox;
     Offset localPosition = renderBox.globalToLocal(details.globalPosition);
 
-    if (!shouldFill) {
+    if (!isFilled) {
       // Рисуем новые линии, если фигура не замкнута
       if (endPoints.isNotEmpty) {
         // Начинаем новую линию с конца предыдущей
@@ -132,40 +132,27 @@ class _MyHomePageState extends State<MyHomePage> {
       }
       endPoints.add(localPosition);
     } else {
-      // Проверяем, выбрана ли точка
+      // Перемещаем точку, если фигура замкнута
       _updateSelectedPoint(localPosition);
     }
   }
 
   void _onPanUpdate(details) {
-    if (shouldFill && selectedPointIndex != null) {
-      RenderBox renderBox = context.findRenderObject() as RenderBox;
-      Offset localPosition = renderBox.globalToLocal(details.globalPosition);
+    RenderBox renderBox = context.findRenderObject() as RenderBox;
+    Offset localPosition = renderBox.globalToLocal(details.globalPosition);
 
+    if (isFilled) {
       setState(() {
-        // Для первой точки
         if (selectedPointIndex == 0) {
           startPoints[0] = localPosition;
           endPoints[endPoints.length - 1] = localPosition;
-        }
-        // Для предпоследней точки
-        else if (selectedPointIndex == startPoints.length - 1) {
-          startPoints[selectedPointIndex!] = localPosition;
-          endPoints[selectedPointIndex! - 1] = localPosition;
-        }
-        // Для промежуточных точек
-        else {
+        } else {
           startPoints[selectedPointIndex!] = localPosition;
           endPoints[selectedPointIndex! - 1] = localPosition;
         }
       });
-    } else if (!shouldFill && endPoints.isNotEmpty) {
-      // Обновляем последнюю точку для рисования новой линии
-      RenderBox renderBox = context.findRenderObject() as RenderBox;
-      Offset localPosition = renderBox.globalToLocal(details.globalPosition);
-      setState(() {
-        endPoints[endPoints.length - 1] = localPosition;
-      });
+    } else {
+      setState(() => endPoints[endPoints.length - 1] = localPosition);
     }
   }
 
@@ -178,17 +165,23 @@ class _MyHomePageState extends State<MyHomePage> {
       }
     }
     setState(() {
-      if (!shouldFill && startPoints.isNotEmpty && endPoints.isNotEmpty) {
+      if (!isFilled) {
         if (intersectionFound) {
           // Удаляем последнюю линию при обнаружении пересечения
           startPoints.removeLast();
           endPoints.removeLast();
-        } else if ((startPoints.first! - endPoints.last!).distance < 20.0) {
+        } else if (((startPoints.first! - endPoints.last!).distance < 20.0) && endPoints.length > 2) {
           // Замыкаем фигуру и обновляем флаг
           endPoints[endPoints.length - 1] = startPoints.first;
-          shouldFill = true;
+          isFilled = true;
+        }
+      } else {
+        if (intersectionFound) {
+          // Перемещаем точку обратно, если обнаружено пересечение
+          //TODO
         }
       }
+
       selectedPointIndex = null;
     });
   }
@@ -244,21 +237,13 @@ class ShapesPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeWidth = 7.0;
 
-    Paint pointPaint = Paint()
-      ..color = Colors.blue
-      ..strokeCap = StrokeCap.round;
+    final Paint pointPaint = Paint()..color = Colors.blue;
 
-    Paint pointBorder = Paint()
-      ..color = Colors.white
-      ..strokeCap = StrokeCap.round;
+    final Paint pointBorder = Paint()..color = Colors.white;
 
-    final filledPointPaint = Paint()
-      ..color = Colors.white
-      ..strokeCap = StrokeCap.round;
+    final Paint filledPointPaint = Paint()..color = Colors.white;
 
-    final filledPointBorder = Paint()
-      ..color = const Color.fromRGBO(125, 125, 125, 1)
-      ..strokeCap = StrokeCap.round;
+    final Paint filledPointBorder = Paint()..color = const Color.fromRGBO(125, 125, 125, 1);
 
     if (startPoints.isNotEmpty && endPoints.isNotEmpty) {
       if (shouldFill && startPoints.length > 1) {
@@ -291,8 +276,7 @@ class ShapesPainter extends CustomPainter {
         if (!shouldFill) {
           canvas.drawCircle(startPoints[i]!, 8.0, pointBorder);
           canvas.drawCircle(startPoints[i]!, 6.0, pointPaint);
-          canvas.drawCircle(endPoints[i]!, 8.0, pointBorder);
-          canvas.drawCircle(endPoints[i]!, 6.0, pointPaint);
+          canvas.drawCircle(endPoints[i]!, 4.0, pointBorder);
         } else {
           canvas.drawCircle(startPoints[i]!, 8.0, filledPointBorder);
           canvas.drawCircle(startPoints[i]!, 6.0, filledPointPaint);
