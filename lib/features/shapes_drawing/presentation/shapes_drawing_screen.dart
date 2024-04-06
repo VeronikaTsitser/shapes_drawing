@@ -54,6 +54,7 @@ class _ShapesDrawingScreenState extends State<ShapesDrawingScreen> {
                 shouldFill: isFilled,
                 customIcon: customIcon,
               ),
+              child: Container(),
             ),
           ),
         ),
@@ -119,7 +120,7 @@ class _ShapesDrawingScreenState extends State<ShapesDrawingScreen> {
     RenderBox renderBox = context.findRenderObject() as RenderBox;
     Offset localPosition = renderBox.globalToLocal(details.globalPosition);
 
-    if (isFilled) {
+    if (isFilled && selectedPointIndex != null) {
       setState(() {
         if (selectedPointIndex == 0) {
           startPoints[0] = localPosition;
@@ -129,7 +130,7 @@ class _ShapesDrawingScreenState extends State<ShapesDrawingScreen> {
           endPoints[selectedPointIndex! - 1] = localPosition;
         }
       });
-    } else {
+    } else if (!isFilled) {
       setState(() => endPoints[endPoints.length - 1] = localPosition);
     }
   }
