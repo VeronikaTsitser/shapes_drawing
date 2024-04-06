@@ -104,11 +104,8 @@ class ShapesPainter extends CustomPainter {
       ..strokeWidth = 7.0;
 
     final Paint pointPaint = Paint()..color = Colors.blue;
-
     final Paint pointBorder = Paint()..color = Colors.white;
-
     final Paint filledPointPaint = Paint()..color = Colors.white;
-
     final Paint filledPointBorder = Paint()..color = const Color.fromRGBO(125, 125, 125, 1);
 
     if (startPoints.isNotEmpty && endPoints.isNotEmpty) {
@@ -130,7 +127,11 @@ class ShapesPainter extends CustomPainter {
     if (!shouldFill && endPoints.isNotEmpty) {
       // Рисуем кастомную иконку в последней точке
       final Offset lastPoint = endPoints.last;
-      canvas.drawImage(customIcon, lastPoint - Offset(customIcon.width / 2, customIcon.height / 2), Paint());
+      canvas.drawImage(
+        customIcon,
+        lastPoint - Offset(customIcon.width / 2, customIcon.height / 2),
+        Paint(),
+      );
     }
 
     for (int i = 0; i < startPoints.length; i++) {
