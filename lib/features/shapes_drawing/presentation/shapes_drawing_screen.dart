@@ -69,6 +69,7 @@ class UndoRedoWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final historyState = ref.watch(historyNotifierProvider);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
       decoration: BoxDecoration(
@@ -87,7 +88,9 @@ class UndoRedoWidget extends ConsumerWidget {
                       );
                 }
               },
-              child: Image.asset('assets/icons/undo.png')),
+              child: historyState.history.length > 1
+                  ? Image.asset('assets/icons/undo_active.png')
+                  : Image.asset('assets/icons/undo.png')),
           const SizedBox(
             height: 12,
             width: 20,
@@ -102,7 +105,9 @@ class UndoRedoWidget extends ConsumerWidget {
                       );
                 }
               },
-              child: Image.asset('assets/icons/redo.png')),
+              child: historyState.redoHistory.isNotEmpty
+                  ? Image.asset('assets/icons/redo_active.png')
+                  : Image.asset('assets/icons/redo.png')),
         ],
       ),
     );
