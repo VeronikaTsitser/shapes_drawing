@@ -42,7 +42,20 @@ class ShapesDrawingScreen extends ConsumerWidget {
               isFilled: isFilled,
             ),
           ),
-          const UndoRedoWidget(),
+          Padding(
+            padding: const EdgeInsets.only(top: 16, left: 8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const UndoRedoWidget(),
+                IconButton(
+                  onPressed: () {},
+                  icon: Image.asset('assets/icons/hashtag_icon.png'),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -57,39 +70,39 @@ class UndoRedoWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
-      margin: const EdgeInsets.only(top: 16, left: 8),
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(5),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          IconButton(
-            onPressed: () {
-              if (ref.read(historyNotifierProvider).history.length > 1) {
-                ref.read(historyNotifierProvider.notifier).undo();
-                ref.read(shapeNotifierProvider.notifier).setState(
-                      ref.read(historyNotifierProvider).history.last,
-                    );
-              }
-            },
-            icon: Image.asset('assets/icons/undo.png'),
-          ),
+          GestureDetector(
+              onTap: () {
+                if (ref.read(historyNotifierProvider).history.length > 1) {
+                  ref.read(historyNotifierProvider.notifier).undo();
+                  ref.read(shapeNotifierProvider.notifier).setState(
+                        ref.read(historyNotifierProvider).history.last,
+                      );
+                }
+              },
+              child: Image.asset('assets/icons/undo.png')),
           const SizedBox(
             height: 12,
+            width: 20,
             child: VerticalDivider(color: Color.fromRGBO(198, 198, 200, 1), thickness: 1),
           ),
-          IconButton(
-            onPressed: () {
-              ref.read(historyNotifierProvider.notifier).redo();
-              ref.read(shapeNotifierProvider.notifier).setState(
-                    ref.read(historyNotifierProvider).history.last,
-                  );
-            },
-            icon: Image.asset('assets/icons/redo.png'),
-          ),
+          GestureDetector(
+              onTap: () {
+                if (ref.read(historyNotifierProvider).redoHistory.isNotEmpty) {
+                  ref.read(historyNotifierProvider.notifier).redo();
+                  ref.read(shapeNotifierProvider.notifier).setState(
+                        ref.read(historyNotifierProvider).history.last,
+                      );
+                }
+              },
+              child: Image.asset('assets/icons/redo.png')),
         ],
       ),
     );
