@@ -2,6 +2,8 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shapes_drawing/features/shapes_drawing/utils/extensions.dart';
+import 'package:shapes_drawing/features/shapes_drawing/utils/utils.dart';
 
 class ShapesPainterWidget extends StatefulWidget {
   const ShapesPainterWidget({super.key, required this.startPoints, required this.endPoints, required this.isFilled});
@@ -68,35 +70,10 @@ class ShapesPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final textStyle = ui.TextStyle(
+    const textStyle = TextStyle(
       color: Colors.black,
       fontSize: 14,
     );
-    // Offset center = calculateCenter(startPoints);
-    if (shouldFill) {
-      for (int i = 0; i < startPoints.length; i++) {
-        double length = (startPoints[i] - endPoints[i]).distance;
-        Offset midPoint = startPoints[i] + (endPoints[i] - startPoints[i]) / 2;
-        double angle = (endPoints[i] - startPoints[i]).direction;
-
-        // Вычисляем вектор, перпендикулярный линии
-        Offset perpVector = getPerpendicularVector(endPoints[i] - startPoints[i], 30.0);
-
-        // Поворачиваем канвас и рисуем текст
-        canvas.save();
-        canvas.translate(midPoint.dx, midPoint.dy);
-        canvas.rotate(angle);
-        final textParagraphBuilder = ui.ParagraphBuilder(ui.ParagraphStyle(
-          textDirection: ui.TextDirection.ltr,
-        ))
-          ..pushStyle(textStyle)
-          ..addText(length.toStringAsFixed(2));
-
-        ui.Paragraph paragraph = textParagraphBuilder.build()..layout(const ui.ParagraphConstraints(width: 60));
-        canvas.drawParagraph(paragraph, perpVector - const Offset(30, 50)); // Смещаем текст
-        canvas.restore();
-      }
-    }
 
     Paint linePaint = Paint()
       ..color = Colors.black
@@ -150,31 +127,43 @@ class ShapesPainter extends CustomPainter {
         canvas.drawCircle(endPoints[i], 6.0, filledPointPaint);
       }
     }
+    if (startPoints.isNotEmpty) {
+      if (shouldFill) {
+        for (int i = 0; i < startPoints.length; i++) {
+          double length = (startPoints[i] - endPoints[i]).distance;
+          double angle = (endPoints[i] - startPoints[i]).direction;
+          Offset midPoint = (startPoints[i] + endPoints[i]) / 2.0;
+          // Получаем перпендикулярный вектор
+          Offset lineVector = endPoints[i] - startPoints[i];
+          Offset perpendicularVector = getPerpendicularVector(lineVector); // Вы можете регулировать этот параметр
+
+          // Определяем направление вектора относительно центра фигуры
+          Offset centerOfFigure = calculateCenterOfFigure(startPoints);
+          bool isInside = (midPoint - centerOfFigure).distanceSquared <
+              (midPoint + perpendicularVector - centerOfFigure).distanceSquared;
+          if (isInside) {
+            perpendicularVector = -perpendicularVector;
+          }
+
+          // Перпендикулярный вектор должен быть направлен наружу от фигуры
+          perpendicularVector = perpendicularVector.normalize() * 30.0;
+
+          // Расчет положения текста
+          final textSpan = TextSpan(text: length.toStringAsFixed(2), style: textStyle);
+          final textPainter = TextPainter(text: textSpan, textDirection: TextDirection.ltr);
+          textPainter.layout(minWidth: 0, maxWidth: double.infinity);
+
+          canvas.save();
+          canvas.translate(midPoint.dx, midPoint.dy);
+          canvas.rotate(angle);
+          canvas.translate(-textPainter.width / 2, -textPainter.height / 2 - 20);
+          textPainter.paint(canvas, Offset.zero);
+          canvas.restore();
+        }
+      }
+    }
   }
 
   @override
   bool shouldRepaint(CustomPainter oldDelegate) => true;
-
-  Offset calculateCenter(List<Offset?> points) {
-    double sumX = 0.0, sumY = 0.0;
-    int count = 0;
-    for (var point in points) {
-      if (point != null) {
-        sumX += point.dx;
-        sumY += point.dy;
-        count++;
-      }
-    }
-    return Offset(sumX / count, sumY / count);
-  }
-
-  Offset getPerpendicularVector(Offset lineVector, double magnitude) {
-    // Вычисление вектора, перпендикулярного заданному вектору (lineVector)
-    // и его нормализация с заданным коэффициентом масштабирования (magnitude)
-    double length = lineVector.distance;
-    // Нормализация вектора
-    Offset normVector = lineVector / (length == 0 ? 1 : length);
-    // Получаем перпендикулярный вектор
-    return Offset(-normVector.dy, normVector.dx) * magnitude;
-  }
 }

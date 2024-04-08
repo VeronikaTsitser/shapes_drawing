@@ -14,3 +14,23 @@ bool doLinesIntersect(Offset p1, Offset p2, Offset p3, Offset p4) {
 
   return false;
 }
+
+Offset getPerpendicularVector(Offset lineVector) {
+  double length = lineVector.distance;
+  if (length == 0) return Offset.zero;
+  Offset unitVector = Offset(-lineVector.dy / length, lineVector.dx / length);
+  return unitVector;
+}
+
+Offset calculateCenterOfFigure(List<Offset> points) {
+  double sumX = 0.0;
+  double sumY = 0.0;
+
+  for (Offset point in points) {
+    sumX += point.dx;
+    sumY += point.dy;
+  }
+
+  int numberOfPoints = points.length;
+  return Offset(sumX / numberOfPoints, sumY / numberOfPoints);
+}
