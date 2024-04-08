@@ -39,6 +39,18 @@ class ShapeNotifier extends StateNotifier<ShapeState> {
     }
   }
 
+  void alignToGrid(double gridSpacing) {
+    final startPoints = state.startPoints.map((point) => _findClosestGridPoint(point, gridSpacing)).toList();
+    final endPoints = state.endPoints.map((point) => _findClosestGridPoint(point, gridSpacing)).toList();
+    state = state.copyWith(startPoints: startPoints, endPoints: endPoints);
+  }
+
+  Offset _findClosestGridPoint(Offset point, double gridSpacing) {
+    int closestX = (point.dx / gridSpacing).round();
+    int closestY = (point.dy / gridSpacing).round();
+    return Offset(closestX * gridSpacing, closestY * gridSpacing);
+  }
+
   void onPanUpdate(DragUpdateDetails details) {
     final localPosition = details.localPosition;
     final startPoints = [...state.startPoints];

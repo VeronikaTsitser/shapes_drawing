@@ -11,3 +11,11 @@ final shapeNotifierProvider = StateNotifierProvider<ShapeNotifier, ShapeState>((
 final historyNotifierProvider = StateNotifierProvider<HistoryNotifier, HistoryState>((ref) {
   return HistoryNotifier();
 });
+
+final gridStepProvider = StateProvider<double>((ref) {
+  return 24.0;
+});
+
+final alignToGridEnabledProvider = StateProvider<bool>((ref) {
+  return false;
+});
