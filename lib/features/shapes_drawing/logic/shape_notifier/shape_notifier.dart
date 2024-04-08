@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shapes_drawing/features/shapes_drawing/logic/shape_state.dart';
+import 'package:shapes_drawing/features/shapes_drawing/logic/shape_notifier/shape_state.dart';
 import 'package:shapes_drawing/features/shapes_drawing/utils/utils.dart';
 
 class ShapeNotifier extends StateNotifier<ShapeState> {

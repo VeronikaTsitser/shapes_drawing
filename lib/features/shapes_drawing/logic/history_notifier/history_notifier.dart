@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shapes_drawing/features/shapes_drawing/logic/history_state.dart';
-import 'package:shapes_drawing/features/shapes_drawing/logic/shape_state.dart';
+import 'package:shapes_drawing/features/shapes_drawing/logic/history_notifier/history_state.dart';
+import 'package:shapes_drawing/features/shapes_drawing/logic/shape_notifier/shape_state.dart';
 
 class HistoryNotifier extends StateNotifier<HistoryState> {
   HistoryNotifier() : super(const HistoryState());
