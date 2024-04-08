@@ -62,44 +62,47 @@ class ShapeNotifier extends StateNotifier<ShapeState> {
     }
   }
 
-  void onPanEnd(DragEndDetails details, ValueChanged<ShapeState> onPointAdded) {
+  void onPanEnd({
+    required DragEndDetails details,
+    required ValueChanged<ShapeState> onPointAdded,
+    required VoidCallback onIntersectionFound,
+  }) {
     final startPoints = [...state.startPoints];
     final endPoints = [...state.endPoints];
     bool intersectionFound = false;
-    for (int i = 0; i < state.startPoints.length - 1; i++) {
-      if (doLinesIntersect(
-        state.startPoints[i],
-        state.endPoints[i],
-        state.startPoints.last,
-        state.endPoints.last,
-      )) {
-        intersectionFound = true;
-        break;
+    for (int i = 0; i < startPoints.length; i++) {
+      for (int j = 0; j < startPoints.length; j++) {
+        // Пропускаем проверку соседних линий и линии самой с собой
+        if (state.isFilled) {
+          if (i != j && (i + 1) % startPoints.length != j && (j + 1) % startPoints.length != i) {
+            if (doLinesIntersect(startPoints[i], endPoints[i], startPoints[j], endPoints[j])) {
+              intersectionFound = true;
+              break;
+            }
+          }
+        } else if (i != j) {
+          if (doLinesIntersect(startPoints[i], endPoints[i], startPoints[j], endPoints[j])) {
+            intersectionFound = true;
+            break;
+          }
+        }
       }
+      if (intersectionFound) break;
     }
 
-    if (!state.isFilled) {
-      if (intersectionFound && ((state.startPoints.first - state.endPoints.last).distance > 20.0)) {
-        startPoints.removeLast();
-        endPoints.removeLast();
-        state = state.copyWith(startPoints: startPoints, endPoints: endPoints);
-      } else if (((state.startPoints.first - state.endPoints.last).distance < 20.0) && state.endPoints.length > 2) {
-        endPoints[endPoints.length - 1] = state.startPoints.first;
-        state = state.copyWith(
-          endPoints: endPoints,
-          isFilled: true,
-        );
-      }
-    } else {
-      if (intersectionFound) {
-        // Перемещаем точку обратно, если обнаружено пересечение
-        //TODO
-      }
+    if (!state.isFilled &&
+        (state.startPoints.first - state.endPoints.last).distance < 20.0 &&
+        state.endPoints.length > 2) {
+      endPoints[endPoints.length - 1] = state.startPoints.first;
+      state = state.copyWith(endPoints: endPoints, isFilled: true);
     }
-    if (!intersectionFound) {
+
+    if (intersectionFound) {
+      onIntersectionFound.call();
+    } else {
       onPointAdded.call(state);
     }
-    state = state.copyWith(selectedPointIndex: null);
-    state = state.copyWith(selectedPoint: null);
+
+    state = state.copyWith(selectedPointIndex: null, selectedPoint: null);
   }
 }

@@ -31,11 +31,11 @@ class ShapesDrawingScreen extends ConsumerWidget {
             onPanStart: ref.read(shapeNotifierProvider.notifier).onPanStart,
             onPanUpdate: ref.read(shapeNotifierProvider.notifier).onPanUpdate,
             onPanEnd: (details) => ref.read(shapeNotifierProvider.notifier).onPanEnd(
-              details,
-              (state) {
-                ref.read(historyNotifierProvider.notifier).addToHistory(state);
-              },
-            ),
+                  details: details,
+                  onPointAdded: (state) => ref.read(historyNotifierProvider.notifier).addToHistory(state),
+                  onIntersectionFound: () =>
+                      ref.read(shapeNotifierProvider.notifier).setState(ref.read(historyNotifierProvider).history.last),
+                ),
             child: ShapesPainterWidget(
               startPoints: startPoints,
               endPoints: endPoints,
