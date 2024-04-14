@@ -1,16 +1,14 @@
 # shapes_drawing
 
-A new Flutter project.
+Требования:
 
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- Использовать Riverpod;
+- Интерфейс приведен в макете Figma;
+- Точка показывается при нажатии на экран;
+- Точка, линия и длина линии меняются динамически при перемещении точки нажатия;
+- При окончании нажатия точка и линия фиксируются;
+- Проверка на невозможность пересечения линий;
+- Если последняя точка находится рядом с первой точкой, то многоугольник замыкается с изменением цвета внутри многоугольника на белый;
+- Готовый многоугольник можно редактировать перемещением точек с динамическим изменением линии и показа её длины при этом область белого цвета внутри многоугольника меняется после фиксации изменения многоугольника.
+- Левые верхние иконки - undo/redo;
+- Правая верхняя иконка включает/выключает режим притягивания точек к узлам сетки. При включении режима существующие и новые точки притягиваются к ближайшему узлу сетки. При выключении режима притягивания положение точек не меняется.
